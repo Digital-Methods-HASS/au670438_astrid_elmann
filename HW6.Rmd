@@ -1,0 +1,52 @@
+---
+title: "HW6"
+author: "Astrid Elmann Hansen"
+date: '2022-10-31'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+pacman::p_load(tidyverse, gapminder) # loading libraries
+df <- gapminder # getting df
+```
+
+Define a defensive function that calculates the Gross Domestic Product of a nation from the data available in the gapminder dataset. You can use the population and GDPpercapita columns for it. Using that function, calculate the GDP of Denmark in the following years: 1967, 1977, 1987, 1997, 2007, and 2017.
+
+```{r}
+GDP <- function(df, place, year_list){ # define function with a df, country and a list of years
+  result <- df %>% filter(country == place & year %in% year_list) # filter the df so we only get the relevant country and years
+  
+  # error message:
+  for (y in year_list) { # for each year in the year list
+    if (y %in% result$year == F){ # if the year from the year list is NOT in the dataframe
+      print(paste0(y, " is not in dataframe")) # print error message
+    }}
+  
+  result$gdp <- result$gdpPercap * result$pop # add a new row with the gdp
+  return(result) # return the result
+  }
+```
+
+```{r}
+GDP(df = df, place = "Denmark", year_list = c(1967, 1977, 1987, 1997, 2007, 2017)) # run function. Notice that the error message shows up for 2017, because that datapoint is not in the dataframe
+```
+
+Write a script that loops over each country in the gapminder dataset, tests whether the country starts with a ‘B’ , and prints out whether the life expectancy is smaller than 50, between 50 and 70, or greater than 70. (Hint: remember the grepl function, and review the Control Flow tutorial)
+
+```{r}
+for (i in 1:nrow(df)) { # for numbers 1 up to the number of rows in the df
+ 
+   if(substr(df$country[i],1,1) == "B"){ # if the first letter in the country name is B
+    
+    if (df$lifeExp[i] < 50 ){ # if the lifexp is less than 50
+      print(paste0(df$country[i], "'s life expectancy is less than 50 in year ", df$year[i])) # print message
+    } else if (df$lifeExp[i] >= 50 & df$lifeExp[i] <= 70){ # else if the lifexp is between 50 and 70 
+      print(paste0(df$country[i], "'s life expectancy is between 50 and 70 in year ", df$year[i])) # print message
+    } else if (df$lifeExp[i] > 70){ # else if lifexp is greater than 70
+      print(paste0(df$country[i], "'s life expectancy is greater than 70 in year ", df$year[i])) # print message
+  }}}
+```
+
+Challenge/Optional: Write a script that loops over each country in the gapminder dataset, tests whether the country starts with a ‘M’ and graphs life expectancy against time (using plot() function) as a line graph if the mean life expectancy is under 50 years.
+
+> I will skip this for now :)
