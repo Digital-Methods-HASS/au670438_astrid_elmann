@@ -1,0 +1,71 @@
+---
+title: "H7"
+author: "ITS ANONOMUS OKAU"
+date: "7/11/22"
+output: html_document
+---
+
+```{r}
+pacman::p_load(tidyverse, rvest)
+```
+
+> I decided to scrape some data from cyclingstage.com about the bike race Vuelta. I'm interested in finding out whether the stages has gotten longer over the years. Or maybe they got shorter at some point, because people stopped doping? Or maybe the first stages are longer than the last ones, because the riders have more energy in the beginning?
+
+```{r scrape-function}
+# This function is kindly provided by Adela
+scrape <- function(website){
+	url <- read_html(website)
+	annual_table <- url %>% 
+ 			html_nodes("table") %>% # lucky for me, all my data is in a table
+ 			html_table()
+  annual_table <- do.call(cbind,unlist(annual_table, recursive = FALSE))
+ }
+```
+
+```{r loop}
+# Create a container for the results
+master_table=NULL 
+
+# Loop over the years to iterate the scraping
+for (year in 2014:2020){  
+	url <- "https://www.cyclingstage.com/vuelta-" # first part of URL
+	website <- paste0(url,year,"-route") # i have to glue the year in the middle of the URL
+	annual_table <- scrape(website) # using the function
+	master_table <- rbind(master_table, annual_table) # append data
+}
+master_table <- as_tibble(master_table) # make into tibble
+```
+
+```{r cleaning}
+vuelta <- master_table %>% # here comes some cleaning
+  rename(desc = `Start and finish`) %>% # renaming a weird column
+  filter(desc != "Rest day" & desc != "rest day") %>% # getting rid of rest days
+  separate(col = desc, into = c("year", "desc"), sep = 11) %>% # splitting columns to get the year
+  separate(col = year, into = c(NA, "year"), sep = 7) # removing the "vuelta" part of the year
+
+vuelta$Length <- str_remove(vuelta$Length, "km") # removing km from Length column
+vuelta$Length <- str_replace(vuelta$Length, ",", ".") # replacing , with .
+vuelta$Length <- as.numeric(vuelta$Length) # making Length numeric
+vuelta$Nr <- as.numeric(vuelta$Nr) # making stage number numeric
+```
+
+```{r plotting}
+vuelta %>% 
+  ggplot(aes(x = Nr, y = Length, color = year)) + 
+  geom_point() +
+  geom_hline(yintercept = mean(vuelta$Length))
+```
+
+
+> Well, from here, nothing looks interesting. No obvious changes at least. I did plot the mean length of the stages, and we see that some stages are very short. Probably time trials? These are marked "TTT" or "ITT" in the dataframe. Let's have a look:
+
+```{r}
+vuelta$TT <- ifelse(vuelta$Type == "TTT" | vuelta$Type == "ITT", "time trial", "other") # making a new column marking timetrials
+
+vuelta %>% 
+  ggplot(aes(x = Nr, y = Length, color = TT)) + 
+  geom_point() +
+  geom_hline(yintercept = mean(vuelta$Length))
+```
+
+> Yup! The timetrials are always short!
